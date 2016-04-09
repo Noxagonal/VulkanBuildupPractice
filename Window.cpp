@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <assert.h>
-#include <filesystem>
 
 Window::Window( Renderer * renderer, VkExtent2D dimensions, std::string window_name )
 {
@@ -122,9 +121,9 @@ void Window::Render( const std::vector<VkCommandBuffer> & command_buffers )
 	VkClearValue clear_values[ 2 ];
 	clear_values[ 0 ].depthStencil.depth	= 1.0f;
 	clear_values[ 0 ].depthStencil.stencil	= 0;
-	clear_values[ 1 ].color.float32[ 0 ]	= 0.5f;
-	clear_values[ 1 ].color.float32[ 1 ]	= 0.5f;
-	clear_values[ 1 ].color.float32[ 2 ]	= 0.5f;
+	clear_values[ 1 ].color.float32[ 0 ]	= 0.10f;
+	clear_values[ 1 ].color.float32[ 1 ]	= 0.15f;
+	clear_values[ 1 ].color.float32[ 2 ]	= 0.20f;
 	clear_values[ 1 ].color.float32[ 3 ]	= 1.0f;
 
 	VkRenderPassBeginInfo begin_info {};
