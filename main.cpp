@@ -31,25 +31,24 @@ int main()
 	std::vector<float> sobj_rot_diff( sobj.size() );			// rotational difference between animations on meshes.
 	for( uint32_t i=0; i < sobj.size(); ++i ) {
 		sobj[ i ] 					= scene->CreateSceneObject_DynamicMesh( &triangle );
-		sobj[ i ]->SetActiveWindow( window );
-		sobj[ i ]->SetActivePipeline( window->GetPipelines()[ 0 ] );
-		sobj_rot_diff[ i ]			= i * M_PI * 2  * 0.01f;	// last value is in "circles", 1.0f equals one full round per object.
+		sobj[ i ]->SetActiveWindow( window );								// set active window, trying to get rid of this step
+		sobj[ i ]->SetActivePipeline( window->GetPipelines()[ 0 ] );		// set active pipeline, this step is required but there might be a lot nicer way of doing it
+		sobj_rot_diff[ i ]			= float( i * M_PI * 2 * 0.01 );			// last value is in "circles", 1.0f equals one full round per object.
 	}
 
-	float rotator = 0.0f;
+	float rotator = 0.0f;		// simple ever increasing float
 
 	while( renderer.Run() ) {
-		rotator += 0.0006f;
+		rotator += 0.0006f;		// increasing the "float counter". This just moves the vertices around a little
 
-		std::vector<VkCommandBuffer> cmd_buffers( sobj.size() );
+		// update meshes manually, ideally this would be it's own entity with a link to a scene_object.
 		for( uint32_t i=0; i < sobj.size(); ++i ) {
-			sobj[ i ]->GetEditableVertices()[ 0 ].loc[ 0 ]		= cos( rotator + sobj_rot_diff[ i ] ) / 2.0f;
-			sobj[ i ]->GetEditableVertices()[ 0 ].loc[ 1 ]		= sin( rotator + sobj_rot_diff[ i ] ) / 2.0f;
-			sobj[ i ]->Update();
-			cmd_buffers[ i ]									= sobj[ i ]->GetActiveCommandBuffer();
+			sobj[ i ]->GetEditableVertices()[ 0 ].loc[ 0 ]		= cos( rotator + sobj_rot_diff[ i ] ) / 2.0f;	// x
+			sobj[ i ]->GetEditableVertices()[ 0 ].loc[ 1 ]		= sin( rotator + sobj_rot_diff[ i ] ) / 2.0f;	// y
 		}
 
-		window->Render( cmd_buffers );
+		scene->Update();					// update scene, this handles all general stuff for now including vertex uploads to GPU, this is recursive
+		window->RenderScene( scene );		// render scene, this is also recursive
 	}
 	vkQueueWaitIdle( renderer.GetVulkanQueue() );
 

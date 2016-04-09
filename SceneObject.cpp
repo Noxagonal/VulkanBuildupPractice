@@ -6,8 +6,9 @@
 #include "Renderer.h"
 
 
-SceneObject::SceneObject( Renderer *renderer )
+SceneObject::SceneObject( Scene * parent_scene, Renderer *renderer )
 {
+	_parent							= parent_scene;
 	_renderer						= renderer;
 	_device							= renderer->GetVulkanDevice();
 	_queue							= renderer->GetVulkanQueue();

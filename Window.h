@@ -8,6 +8,7 @@
 
 class Renderer;
 class Pipeline;
+class Scene;
 
 class Window
 {
@@ -21,6 +22,7 @@ public:
 	void									Close();
 
 	void									Render( const std::vector<VkCommandBuffer> & command_buffers );
+	void									RenderScene( const Scene * scene, bool force_recalculate = false );
 
 	VkExtent2D								GetSize();
 

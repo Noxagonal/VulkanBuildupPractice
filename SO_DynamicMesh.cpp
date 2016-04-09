@@ -8,8 +8,8 @@
 
 #include <assert.h>
 
-SO_DynamicMesh::SO_DynamicMesh( Renderer * renderer, Mesh * mesh )
-	: SceneObject( renderer )
+SO_DynamicMesh::SO_DynamicMesh( Scene * parent_scene, Renderer * renderer, Mesh * mesh )
+	: SceneObject( parent_scene, renderer )
 {
 	assert( nullptr != mesh );
 	_mesh = mesh;

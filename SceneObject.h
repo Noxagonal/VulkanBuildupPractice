@@ -3,6 +3,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
+class Scene;
 class Renderer;
 class Window;
 class Pipeline;
@@ -10,7 +11,7 @@ class Pipeline;
 class SceneObject
 {
 public:
-	SceneObject( Renderer * renderer );
+	SceneObject( Scene * parent_scene, Renderer * renderer );
 	virtual ~SceneObject();
 
 	virtual void					Update() = 0;
@@ -20,6 +21,7 @@ public:
 	void							SetActivePipeline( Pipeline * pipeline );
 
 protected:
+	Scene						*	_parent							= nullptr;
 	Renderer					*	_renderer						= nullptr;
 	Window						*	_window							= nullptr;
 	Pipeline					*	_pipeline						= nullptr;

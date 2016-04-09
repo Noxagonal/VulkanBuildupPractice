@@ -42,7 +42,7 @@ Window * Renderer::OpenWindow( VkExtent2D dimensions, std::string window_name )
 
 Scene * Renderer::CreateScene()
 {
-	Scene * scene = new Scene( this );
+	Scene * scene = new Scene( nullptr, this );
 	_scenes.push_back( scene );
 	return scene;
 }

@@ -3,6 +3,7 @@
 #include "Window.h"
 #include "Renderer.h"
 #include "Pipeline.h"
+#include "Scene.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -193,6 +194,15 @@ void Window::Render( const std::vector<VkCommandBuffer> & command_buffers )
 
 	// really simple syncronization, replace with something more sophisticated later
 	vkQueueWaitIdle( _queue );
+}
+
+void Window::RenderScene( const Scene * scene, bool force_recalculate )
+{
+	std::vector<VkCommandBuffer> render_command_buffers;
+
+	// do a recursive search on the scene and find all objects
+	scene->CollectCommandBuffers_Recursive( render_command_buffers, force_recalculate );
+	Render( render_command_buffers );
 }
 
 VkExtent2D Window::GetSize()

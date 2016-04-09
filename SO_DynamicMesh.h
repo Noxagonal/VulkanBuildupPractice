@@ -6,11 +6,12 @@
 #include "SceneObject.h"
 
 class Mesh;
+class Scene;
 
 class SO_DynamicMesh : public SceneObject
 {
 public:
-	SO_DynamicMesh( Renderer * renderer, Mesh * mesh );
+	SO_DynamicMesh( Scene * parent_scene, Renderer * renderer, Mesh * mesh );
 	~SO_DynamicMesh();
 
 	void									Update();
