@@ -1,7 +1,8 @@
 
 #include "BUILD_OPTIONS.h"
-#include "Shared.hpp"
 #include "Platform.h"
+
+#include "Shared.hpp"
 
 #include <sstream>
 #include <iostream>

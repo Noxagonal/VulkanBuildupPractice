@@ -1,11 +1,15 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
 #include <string>
 
 class Window;
 class Renderer;
 
+// Pipeline handles vulkan pipelines, it's a relatively big object so it got it's own class
+// This class automatically creates a vulkan pipeline from given shader sources and window
 class Pipeline
 {
 public:

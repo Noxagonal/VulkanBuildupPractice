@@ -1,4 +1,8 @@
 
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
+#include "Shared.hpp"
 #include "Scene.h"
 
 #include "SO_DynamicMesh.h"

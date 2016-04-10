@@ -1,10 +1,14 @@
 #pragma once
 
-#include <assert.h>
-#include <vulkan/vulkan.h>
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
 
+#include <assert.h>
+
+// Runtime error checking on results of Vulkan functions.
 void ErrCheck( VkResult err );
 
+// basic clamping function
 template<typename T>
 T clamp( T input, T minimum, T maximum )
 {

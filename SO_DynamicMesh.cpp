@@ -1,4 +1,7 @@
 
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
 #include "SO_DynamicMesh.h"
 #include "Shared.hpp"
 #include "Renderer.h"
@@ -229,68 +232,4 @@ void SO_DynamicMesh::_RebuildCommandBuffer()
 
 		vkEndCommandBuffer( _command_buffers[ i ] );
 	}
-
-	/*
-	VkCommandBufferInheritanceInfo inheritance_info {};
-	inheritance_info.sType					= VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-	inheritance_info.renderPass				= _window->GetRenderPass();
-	inheritance_info.subpass				= 0;
-	inheritance_info.framebuffer			= 0; _window->GetFrameBuffers()[ _window->GetCurrentFrameBufferIndex() ];
-//	inheritance_info.occlusionQueryEnable	= VK_TRUE;
-//	inheritance_info.queryFlags				= VK_QUERY_CONTROL_PRECISE_BIT;
-//	inheritance_info.pipelineStatistics		=;
-
-	VkCommandBufferBeginInfo begin_info {};
-	begin_info.sType						= VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	begin_info.flags						= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-	begin_info.pInheritanceInfo				= &inheritance_info;
-	vkBeginCommandBuffer( _command_buffer, &begin_info );
-
-	VkBufferMemoryBarrier vertex_buffer_barrier {};
-	vertex_buffer_barrier.sType					= VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-	vertex_buffer_barrier.srcAccessMask			= VK_ACCESS_HOST_WRITE_BIT;
-	vertex_buffer_barrier.dstAccessMask			= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-	vertex_buffer_barrier.srcQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
-	vertex_buffer_barrier.dstQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
-	vertex_buffer_barrier.buffer				= _vertex_buffer;
-	vertex_buffer_barrier.offset				= 0;
-	vertex_buffer_barrier.size					= _vertex_buffer_size;
-
-	vkCmdPipelineBarrier( _command_buffer,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-		0,
-		0, nullptr,
-		1, &vertex_buffer_barrier,
-		0, nullptr );
-
-	VkBufferMemoryBarrier index_buffer_barrier {};
-	index_buffer_barrier.sType					= VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-	index_buffer_barrier.srcAccessMask			= VK_ACCESS_HOST_WRITE_BIT;
-	index_buffer_barrier.dstAccessMask			= VK_ACCESS_INDEX_READ_BIT;
-	index_buffer_barrier.srcQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
-	index_buffer_barrier.dstQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
-	index_buffer_barrier.buffer					= _index_buffer;
-	index_buffer_barrier.offset					= 0;
-	index_buffer_barrier.size					= _index_buffer_size;
-
-	vkCmdPipelineBarrier( _command_buffer,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-		0,
-		0, nullptr,
-		1, &index_buffer_barrier,
-		0, nullptr );
-
-	vkCmdBindPipeline( _command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline->GetVulkanPipeline() );
-
-	VkDeviceSize vertex_buffer_offsets[] { 0 };
-	vkCmdBindVertexBuffers( _command_buffer, 0, 1, &_vertex_buffer, vertex_buffer_offsets );
-	vkCmdBindIndexBuffer( _command_buffer, _index_buffer, 0, VK_INDEX_TYPE_UINT32 );
-
-//	vkCmdDraw( _command_buffer, 3, 1, 0, 0 );
-	vkCmdDrawIndexed( _command_buffer, 3 * _local_indices.size(), 1, 0, 0, 0 );
-
-	vkEndCommandBuffer( _command_buffer );
-	*/
 }

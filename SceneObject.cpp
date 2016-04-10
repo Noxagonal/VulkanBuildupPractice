@@ -1,9 +1,14 @@
 
-#include <vector>
 
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
+#include "Shared.hpp"
 #include "SceneObject.h"
 #include "Window.h"
 #include "Renderer.h"
+
+#include <vector>
 
 
 SceneObject::SceneObject( Scene * parent_scene, Renderer *renderer )

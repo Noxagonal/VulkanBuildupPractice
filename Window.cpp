@@ -1,5 +1,8 @@
 
 #include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
+#include "Shared.hpp"
 #include "Window.h"
 #include "Renderer.h"
 #include "Pipeline.h"
@@ -7,16 +10,13 @@
 
 #include <algorithm>
 #include <assert.h>
-<<<<<<< HEAD
-=======
 #include <iostream>
 #include <climits>
-//#include <filesystem>
->>>>>>> refs/remotes/origin/XcbWindowHandling
+//#include <filesystem>			// useful but not widely supported yet.
 
 Window::Window( Renderer * renderer, VkExtent2D dimensions, std::string window_name )
 {
-	_swapchain_image_count		= 2;		// 2 = double buffering, 3 = triple buffering
+	_swapchain_image_count		= 2;			// 2 = double buffering, 3 = triple buffering
 	_renderer					= renderer;
 	_window_name				= window_name;
 	_device						= renderer->_device;
@@ -403,11 +403,6 @@ void Window::_CreateOSWindow()
 	ShowWindow( _win32_window, SW_SHOW );
 	SetForegroundWindow( _win32_window );
 	SetFocus( _win32_window );
-
-//	RECT window_dimensions {};
-//	GetWindowRect( _win32_window, &window_dimensions );
-//	_dimensions.width		= window_dimensions.right - window_dimensions.left;
-//	_dimensions.height		= window_dimensions.bottom - window_dimensions.top;
 }
 
 void Window::_DestroyOSWindow()
@@ -417,13 +412,22 @@ void Window::_DestroyOSWindow()
 	_win32_window		= nullptr;
 }
 
+void Window::_UpdateOSWindow()
+{
+	MSG msg;
+	if( PeekMessage( &msg, _win32_window, 0, 0, PM_REMOVE ) ) {
+		TranslateMessage( &msg );
+		DispatchMessage( &msg );
+	}
+}
+
 
 #elif VK_USE_PLATFORM_XCB_KHR
 
 
 void Window::_CreateOSWindow()
 {
-	// create connection
+	// create connection to X11 server
 	const xcb_setup_t		*	setup		= nullptr;
 	xcb_screen_iterator_t		iter;
 	int							screen		= 0;
@@ -441,11 +445,11 @@ void Window::_CreateOSWindow()
 	}
 	_xcb_screen = iter.data;
 
-    VkRect2D _dimensions = {{0, 0}, {800, 600}};
+    VkRect2D dimensions = {{0, 0}, {800, 600}};
 
 	// create window
-    assert( _dimensions.extent.width > 0 );
-    assert( _dimensions.extent.height > 0 );
+    assert( dimensions.extent.width > 0 );
+    assert( dimensions.extent.height > 0 );
 
 	uint32_t value_mask, value_list[ 32 ];
 
@@ -456,8 +460,8 @@ void Window::_CreateOSWindow()
 	value_list[ 1 ] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE;
 
 	xcb_create_window( _xcb_connection, XCB_COPY_FROM_PARENT, _xcb_window,
-        _xcb_screen->root, _dimensions.offset.x, _dimensions.offset.y,
-        _dimensions.extent.width, _dimensions.extent.height, 0,
+        _xcb_screen->root, dimensions.offset.x, dimensions.offset.y,
+        dimensions.extent.width, dimensions.extent.height, 0,
 		XCB_WINDOW_CLASS_INPUT_OUTPUT, _xcb_screen->root_visual,
 		value_mask, value_list );
 
@@ -502,6 +506,9 @@ void Window::_DestroyOSWindow()
 	_xcb_connection		= nullptr;
 }
 
+void Window::_UpdateOSWindow()
+{
+}
 
 #endif
 
@@ -559,7 +566,7 @@ void Window::_CreateSwapchain()
 		_surface_size.height		= _surface_capabilities.currentExtent.height;
 	}
 
-	// select present mode i.e vertical sync
+	// select present mode ( also v-sync ). FIFO is always available, if we need to, we can always fall back to that
 	VkPresentModeKHR present_mode		= VK_PRESENT_MODE_FIFO_KHR;
 	{
 		uint32_t present_mode_count = 0;
@@ -877,33 +884,6 @@ void Window::_DestroyRenderCommands()
 	begin_info.sType			= VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begin_info.flags			= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	vkBeginCommandBuffer( _render_command_buffers[ _current_swapchain_image ], &begin_info );
-	/*
-	{
-		VkImageMemoryBarrier image_barrier {};
-		image_barrier.sType						= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		image_barrier.image						= _swapchain_images[ _current_swapchain_image ];
-		image_barrier.oldLayout					= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		image_barrier.newLayout					= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		image_barrier.srcAccessMask				= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-		image_barrier.dstAccessMask				= VK_ACCESS_MEMORY_READ_BIT;
-		image_barrier.srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED;
-		image_barrier.dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED;
-		image_barrier.subresourceRange.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
-		image_barrier.subresourceRange.layerCount		= 1;
-		image_barrier.subresourceRange.levelCount		= 1;
-		image_barrier.subresourceRange.baseArrayLayer	= 0;
-		image_barrier.subresourceRange.baseMipLevel		= 0;
-
-		vkCmdPipelineBarrier(
-			_render_command_buffers[ _current_swapchain_image ],
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &image_barrier );
-	}
-	*/
 	vkEndCommandBuffer( _render_command_buffers[ _current_swapchain_image ] );
 
 	VkPipelineStageFlags flags[] { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
@@ -926,41 +906,8 @@ void Window::_DestroyRenderCommands()
 	_command_pool = VK_NULL_HANDLE;
 }
 
-void Window::_UpdateOSWindow()
-{
-#if VK_USE_PLATFORM_WIN32_KHR
-	MSG msg;
-	if( PeekMessage( &msg, _win32_window, 0, 0, PM_REMOVE ) ) {
-		TranslateMessage( &msg );
-		DispatchMessage( &msg );
-	}
-#elif VK_USE_PLATFORM_XCB_KHR
-
-#endif
-}
-
 void Window::_CreatePipelines()
 {
-	/*
-	// filesystem code. This is C++17 planned feature
-	namespace filesys = std::tr2::sys;
-
-	// collect a list of folders inside pipelines folder
-	std::vector<filesys::path>		pipeline_folders;
-	pipeline_folders.reserve( 128 );
-	filesys::directory_iterator		dir_iterator( BUILD_PIPELINE_DIRECTORY );
-	for( auto &dir : dir_iterator ) {
-		if( filesys::is_directory( dir ) ) {
-			pipeline_folders.push_back( dir.path() );
-		}
-	}
-	_pipelines.reserve( pipeline_folders.size() );
-	for( auto &path : pipeline_folders ) {
-		auto pipe = new Pipeline( _renderer, this, path.string(), path.filename().string() );
-		_pipelines.push_back( pipe );
-	}
-	*/
-
 	auto pipeline_names = _renderer->GetPipelineNames();
 	for( auto &n : pipeline_names ) {
 		auto pipe = new Pipeline( _renderer, this, n );

@@ -1,13 +1,17 @@
 #pragma once
 
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
 #include <vector>
-#include <vulkan/vulkan.h>
 
 class Scene;
 class Renderer;
 class Window;
 class Pipeline;
 
+// SceneObject is a base object for "in-scene" objects. These are individual
+// entities within a scene, SceneObject is unique for each object within the scene
 class SceneObject
 {
 public:

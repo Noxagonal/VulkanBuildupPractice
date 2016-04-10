@@ -1,12 +1,16 @@
 
-#include <fstream>
-#include <vector>
-
 #include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
+#include "Shared.hpp"
 #include "Pipeline.h"
 #include "Renderer.h"
 #include "Window.h"
 #include "Mesh.h"
+
+#include <fstream>
+#include <vector>
+
 
 Pipeline::Pipeline( Renderer * renderer, Window * window, const std::string & name )
 {

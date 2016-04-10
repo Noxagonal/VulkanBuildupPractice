@@ -1,13 +1,18 @@
 #pragma once
 
-#include <vector>
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
 
 #include "Mesh.h"
 #include "SceneObject.h"
 
+#include <vector>
+
 class Mesh;
 class Scene;
 
+// SceneObject of DynamicMesh variety. This class has it's own copy of the data
+// which can be updated without modifying the original mesh.
 class SO_DynamicMesh : public SceneObject
 {
 public:

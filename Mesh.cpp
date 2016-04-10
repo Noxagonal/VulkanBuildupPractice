@@ -1,5 +1,9 @@
-#include "Mesh.h"
 
+#include "BUILD_OPTIONS.h"
+#include "Platform.h"
+
+#include "Shared.hpp"
+#include "Mesh.h"
 
 
 Mesh::Mesh()

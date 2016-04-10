@@ -1,6 +1,8 @@
 #pragma once
 
+#include "BUILD_OPTIONS.h"
 #include "Platform.h"
+
 #include <vector>
 #include <list>
 
@@ -11,6 +13,8 @@ class Mesh;
 
 class SO_DynamicMesh;
 
+// Scenes are used to store "in-world" SceneObject:s Scenes can also have child
+// scene objects which allows scenes to be used in tree structure.
 class Scene
 {
 public:

@@ -1,16 +1,17 @@
 #pragma once
 
+#include "BUILD_OPTIONS.h"
 #include "Platform.h"
 
-#include <vulkan/vulkan.h>
 #include <string>
 #include <vector>
-#include <xcb/xcb.h>
 
 class Renderer;
 class Pipeline;
 class Scene;
 
+// Window object is a child object of the Renderer and it's used to open
+// individual windows where we can direct our Vulkan draw commands.
 class Window
 {
 	friend class Renderer;

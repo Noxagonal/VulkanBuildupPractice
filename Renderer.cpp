@@ -1,6 +1,8 @@
 
 #include "BUILD_OPTIONS.h"
 #include "Platform.h"
+
+#include "Shared.hpp"
 #include "Renderer.h"
 #include "Window.h"
 #include "Scene.h"

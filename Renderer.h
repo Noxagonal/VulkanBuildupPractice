@@ -1,16 +1,19 @@
 #pragma once
 
-#include "Platform.h"
+#include "BUILD_OPTIONS.h"
+#include "Shared.hpp"
 
 #include <vector>
 #include <list>
 #include <string>
 
-void ErrCheck( VkResult err );
-
 class Window;
 class Scene;
 
+// Render engine. Everything graphics related belongs to this class.
+// This is the primary thing to include in the application.
+// Destroying Renderer object is enough to shutdown the whole rendering
+// engine and free all resources used by this object or it's child objects.
 class Renderer
 {
 	friend class Window;
