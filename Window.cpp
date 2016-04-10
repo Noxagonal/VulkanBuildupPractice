@@ -7,6 +7,12 @@
 
 #include <algorithm>
 #include <assert.h>
+<<<<<<< HEAD
+=======
+#include <iostream>
+#include <climits>
+//#include <filesystem>
+>>>>>>> refs/remotes/origin/XcbWindowHandling
 
 Window::Window( Renderer * renderer, VkExtent2D dimensions, std::string window_name )
 {
@@ -435,9 +441,11 @@ void Window::_CreateOSWindow()
 	}
 	_xcb_screen = iter.data;
 
+    VkRect2D _dimensions = {{0, 0}, {800, 600}};
+
 	// create window
-	assert( _dimensions.width > 0 );
-	assert( _dimensions.height > 0 );
+    assert( _dimensions.extent.width > 0 );
+    assert( _dimensions.extent.height > 0 );
 
 	uint32_t value_mask, value_list[ 32 ];
 
@@ -448,7 +456,8 @@ void Window::_CreateOSWindow()
 	value_list[ 1 ] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE;
 
 	xcb_create_window( _xcb_connection, XCB_COPY_FROM_PARENT, _xcb_window,
-		_xcb_screen->root, 0, 0, _dimensions.width, _dimensions.height, 0,
+        _xcb_screen->root, _dimensions.offset.x, _dimensions.offset.y,
+        _dimensions.extent.width, _dimensions.extent.height, 0,
 		XCB_WINDOW_CLASS_INPUT_OUTPUT, _xcb_screen->root_visual,
 		value_mask, value_list );
 
@@ -489,7 +498,7 @@ void Window::_DestroyOSWindow()
 {
 	xcb_destroy_window( _xcb_connection, _xcb_window );
 	xcb_disconnect( _xcb_connection );
-	_xcb_window			= nullptr;
+    _xcb_window			= 0;
 	_xcb_connection		= nullptr;
 }
 

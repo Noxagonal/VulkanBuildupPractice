@@ -7,6 +7,7 @@
 #include "Mesh.h"
 
 #include <assert.h>
+#include <cstring>
 
 SO_DynamicMesh::SO_DynamicMesh( Scene * parent_scene, Renderer * renderer, Mesh * mesh )
 	: SceneObject( parent_scene, renderer )

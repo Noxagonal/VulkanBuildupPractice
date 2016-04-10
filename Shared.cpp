@@ -5,6 +5,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <cmath>
 
 void ErrCheck( VkResult err )
 {

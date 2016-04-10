@@ -1,5 +1,6 @@
 
 #include <fstream>
+#include <vector>
 
 #include "BUILD_OPTIONS.h"
 #include "Pipeline.h"
@@ -14,7 +15,7 @@ Pipeline::Pipeline( Renderer * renderer, Window * window, const std::string & na
 	_gpu			= renderer->GetVulkanPhysicalDevice();
 	_device			= renderer->GetVulkanDevice();
 	_queue			= renderer->GetVulkanQueue();
-	_name			= name;
+    _name			= name;
 
 	_SubConstructor();
 }
@@ -37,11 +38,15 @@ const std::string & Pipeline::GetName()
 
 void Pipeline::_SubConstructor()
 {
-	auto filepath = BUILD_PIPELINE_DIRECTORY + _name ;
+    auto filepath = BUILD_PIPELINE_DIRECTORY + _name ;
 	{
 		std::ifstream file( filepath + "/vert.spv", std::ifstream::binary | std::ifstream::ate );
-		auto file_size = file.tellg();
-		std::vector<char> code( file_size );
+        if(!file.is_open())
+            abort();
+
+        size_t file_size = file.tellg();
+        std::vector<char> code( file_size );
+
 		file.seekg( 0 );
 		file.read( code.data(), file_size );
 		file.close();
@@ -54,8 +59,12 @@ void Pipeline::_SubConstructor()
 	}
 	{
 		std::ifstream file( filepath + "/frag.spv", std::ifstream::binary | std::ifstream::ate );
-		auto file_size = file.tellg();
+        if(!file.is_open())
+            abort();
+
+		auto file_size = file.tellg();        
 		std::vector<char> code( file_size );
+
 		file.seekg( 0 );
 		file.read( code.data(), file_size );
 		file.close();
