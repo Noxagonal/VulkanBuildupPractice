@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 #include <string>
 #include <vector>
+#include <xcb/xcb.h>
 
 class Renderer;
 class Pipeline;

@@ -128,7 +128,7 @@ void Renderer::_SetupLayersAndExtensions()
 {
 //	_instance_extensions.push_back( VK_KHR_DISPLAY_EXTENSION_NAME );			// render to screen directly, embedded systems might use this
 	_instance_extensions.push_back( VK_KHR_SURFACE_EXTENSION_NAME );			// render to screen via operating system
-	_instance_extensions.push_back( VK_KHR_WIN32_SURFACE_EXTENSION_NAME );
+    _instance_extensions.push_back( PLATFORM_DEPENDENT_EXTENSION_NAME );
 
 	_device_extensions.push_back( VK_KHR_SWAPCHAIN_EXTENSION_NAME );
 }

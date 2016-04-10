@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <list>
+#include <string>
 
 void ErrCheck( VkResult err );
 

@@ -13,9 +13,15 @@
 #pragma comment( linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup" )
 #endif
 
-#elif _XCB // don't know how to detect this...
+#define PLATFORM_DEPENDENT_EXTENSION_NAME VK_KHR_WIN32_SURFACE_EXTENSION_NAME
 
+#elif __linux
+
+// for simplicity
+// there are other ways to create windows on linux (wayland and mir)
 #define VK_USE_PLATFORM_XCB_KHR 1
+
+#define PLATFORM_DEPENDENT_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
 
 #else
 #error No platform specified
