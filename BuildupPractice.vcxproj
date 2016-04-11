@@ -152,6 +152,8 @@
     <ClCompile Include="Shared.cpp" />
     <ClCompile Include="SO_DynamicMesh.cpp" />
     <ClCompile Include="Window.cpp" />
+    <ClCompile Include="Window_win32.cpp" />
+    <ClCompile Include="Window_xcb.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BUILD_OPTIONS.h" />

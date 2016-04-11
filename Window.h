@@ -50,6 +50,7 @@ private:
 	void _ExecuteSetupCommandBuffer();
 
 	void _CreateOSWindow();
+	void _CreateOSSurface();
 	void _DestroyOSWindow();
 	void _UpdateOSWindow();
 
@@ -91,10 +92,6 @@ private:
 	std::vector<VkImageView>			_swapchain_image_views;
 	std::vector<VkFramebuffer>			_framebuffers;
 	std::vector<VkCommandBuffer>		_render_command_buffers;
-//	std::vector<VkCommandBuffer>		_render_image_to_writeable;			// Attempt 2
-//	std::vector<VkCommandBuffer>		_render_image_to_presentable;		// Attempt 2
-//	std::vector<VkSemaphore>			_semaphore_intermediate_1;			// Attempt 2
-//	std::vector<VkSemaphore>			_semaphore_intermediate_2;			// Attempt 2
 	std::vector<VkSemaphore>			_render_complete;
 	VkSemaphore							_present_image_available		= VK_NULL_HANDLE;
 
