@@ -30,7 +30,7 @@ void Window::_CreateOSWindow()
 	}
 	_xcb_screen = iter.data;
 
-	VkRect2D dimensions = { { 0, 0 }, { 800, 600 } };
+	VkRect2D dimensions = { { 0, 0 }, { _surface_size.width, _surface_size.height } };
 
 	// create window
 	assert( dimensions.extent.width > 0 );
@@ -51,7 +51,6 @@ void Window::_CreateOSWindow()
 		value_mask, value_list );
 
 	/* Magic code that will send notification when window is destroyed */
-	// might cause problems because I put the connection in the renderer... Lets hope this works
 	xcb_intern_atom_cookie_t cookie =
 		xcb_intern_atom( _xcb_connection, 1, 12, "WM_PROTOCOLS" );
 	xcb_intern_atom_reply_t *reply =
@@ -102,6 +101,17 @@ void Window::_DestroyOSWindow()
 
 void Window::_UpdateOSWindow()
 {
+	auto event = xcb_poll_for_event( _xcb_connection );
+	switch( event ) {
+	case XCB_CLIENT_MESSAGE:
+		if( ( *(xcb_client_message_event_t*)event ).data.data32[ 0 ] == ( *_xcb_atom_window_reply ).atom ) {
+			Close();
+		}
+		break;
+	default:
+		break;
+	}
+	free( event );
 }
 
 #endif
