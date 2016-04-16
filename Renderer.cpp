@@ -88,7 +88,7 @@ VkPhysicalDevice Renderer::GetVulkanPhysicalDevice()
 	return _gpu;
 }
 
-VkPhysicalDeviceMemoryProperties Renderer::GetVulkanPhysicalDeviceMemoryProperties()
+const VkPhysicalDeviceMemoryProperties & Renderer::GetVulkanPhysicalDeviceMemoryProperties() const
 {
 	return _gpu_memory_properties;
 }

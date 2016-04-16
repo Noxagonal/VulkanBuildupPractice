@@ -5,6 +5,7 @@
 
 #include "Mesh.h"
 #include "SceneObject.h"
+#include "VulkanCollections.h"
 
 #include <vector>
 
@@ -34,10 +35,5 @@ private:
 	std::vector<Mesh_Vertex>				_local_vertices;
 	std::vector<Mesh_Polygon>				_local_indices;
 
-	VkBuffer								_vertex_buffer				= VK_NULL_HANDLE;
-	VkBuffer								_index_buffer				= VK_NULL_HANDLE;
-	uint64_t								_vertex_buffer_size			= 0;
-	uint64_t								_index_buffer_size			= 0;
-	VkDeviceMemory							_vertex_buffer_memory		= VK_NULL_HANDLE;
-	VkDeviceMemory							_index_buffer_memory		= VK_NULL_HANDLE;
+	std::vector<Buffer>						_buffers;
 };

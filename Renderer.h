@@ -22,22 +22,22 @@ public:
 	Renderer( const std::vector<std::string> & used_pipeline_names );
 	~Renderer();
 
-	Window								*	OpenWindow( VkExtent2D dimensions, std::string window_name = std::string() );
+	Window									*	OpenWindow( VkExtent2D dimensions, std::string window_name = std::string() );
 
-	Scene								*	CreateScene();
+	Scene									*	CreateScene();
 
-	bool									Run();
+	bool										Run();
 
-	const std::vector<std::string>		&	GetPipelineNames();
+	const std::vector<std::string>			&	GetPipelineNames();
 
-	const std::list<Scene*>				*	GetSceneList();
-	const std::list<Window*>			*	GetWindowList();
+	const std::list<Scene*>					*	GetSceneList();
+	const std::list<Window*>				*	GetWindowList();
 
-	VkPhysicalDevice						GetVulkanPhysicalDevice();
-	VkPhysicalDeviceMemoryProperties		GetVulkanPhysicalDeviceMemoryProperties();
-	VkQueue									GetVulkanQueue();
-	VkDevice								GetVulkanDevice();
-	uint32_t								GetVulkanGraphicsQueueFamilyIndex();
+	VkPhysicalDevice							GetVulkanPhysicalDevice();
+	const VkPhysicalDeviceMemoryProperties	&	GetVulkanPhysicalDeviceMemoryProperties() const;
+	VkQueue										GetVulkanQueue();
+	VkDevice									GetVulkanDevice();
+	uint32_t									GetVulkanGraphicsQueueFamilyIndex();
 
 private:
 	void _DestroyScenes();

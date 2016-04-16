@@ -151,6 +151,7 @@
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="Shared.cpp" />
     <ClCompile Include="SO_DynamicMesh.cpp" />
+    <ClCompile Include="VulkanTools.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="Window_win32.cpp" />
     <ClCompile Include="Window_xcb.cpp" />
@@ -165,6 +166,8 @@
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="Shared.hpp" />
     <ClInclude Include="SO_DynamicMesh.h" />
+    <ClInclude Include="VulkanCollections.h" />
+    <ClInclude Include="VulkanTools.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
