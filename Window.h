@@ -77,6 +77,10 @@ private:
 	void _CreatePipelines();
 	void _DestroyPipelines();
 
+	void _CreateDescriptorSets();
+	void _UpdateDescriptorSets();
+	void _DestroyDescriptorSets();
+
 	VkDevice							_device							= VK_NULL_HANDLE;
 	VkQueue								_queue							= VK_NULL_HANDLE;
 	VkSwapchainKHR						_swapchain						= VK_NULL_HANDLE;
@@ -94,6 +98,10 @@ private:
 	std::vector<VkCommandBuffer>		_render_command_buffers;
 	std::vector<VkSemaphore>			_render_complete;
 	VkSemaphore							_present_image_available		= VK_NULL_HANDLE;
+
+	VkDescriptorPool					_descriptor_pool				= VK_NULL_HANDLE;
+	VkDescriptorSetLayout				_descriptor_set_layout			= VK_NULL_HANDLE;
+	VkDescriptorSet						_descriptor_set					= VK_NULL_HANDLE;
 
 	Renderer						*	_renderer						= VK_NULL_HANDLE;
 	std::vector<Pipeline*>				_pipelines;

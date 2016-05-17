@@ -89,5 +89,8 @@
     <ClInclude Include="VulkanCollections.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UniformBuffers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

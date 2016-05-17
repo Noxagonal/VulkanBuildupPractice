@@ -139,7 +139,7 @@ void SO_DynamicMesh::_RebuildCommandBuffer()
 		begin_info.flags						= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		begin_info.pInheritanceInfo				= &inheritance_info;
 		vkBeginCommandBuffer( _command_buffers[ i ] , &begin_info );
-
+		/*
 		// I'm not sure if these barriers are actually needed
 		// Barrier for vertex buffer transfer
 		VkBufferMemoryBarrier vertex_buffer_barrier {};
@@ -178,7 +178,7 @@ void SO_DynamicMesh::_RebuildCommandBuffer()
 			0, nullptr,
 			1, &index_buffer_barrier,
 			0, nullptr );
-
+			*/
 		vkCmdBindPipeline( _command_buffers[ i ], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline->GetVulkanPipeline() );
 
 		VkDeviceSize vertex_buffer_offsets[] { 0 };

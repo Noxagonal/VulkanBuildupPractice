@@ -354,7 +354,7 @@ void Window::_DestroySurface()
 void Window::_CreateSwapchain()
 {
 	// select swapchain image amount
-	_swapchain_image_count			= std::min( std::max( _swapchain_image_count, _surface_capabilities.minImageCount ), _surface_capabilities.maxImageCount );
+	_swapchain_image_count			= std::min( std::max( _swapchain_image_count, _surface_capabilities.minImageCount + 1 ), _surface_capabilities.maxImageCount );
 
 	// make sure that the swapchain images and the surface area match in size
 	// checking only width is enough
@@ -391,7 +391,7 @@ void Window::_CreateSwapchain()
 	create_info.presentMode				= present_mode;
 	create_info.clipped					= true;
 	create_info.imageColorSpace			= _surface_format.colorSpace;
-	create_info.imageUsage				= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	create_info.imageUsage				= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;// | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	create_info.imageSharingMode		= VK_SHARING_MODE_EXCLUSIVE;
 	create_info.queueFamilyIndexCount	= 0;
 	create_info.pQueueFamilyIndices		= nullptr;
@@ -730,4 +730,59 @@ void Window::_DestroyPipelines()
 		delete pipe;
 	}
 	_pipelines.clear();
+}
+
+void Window::_CreateDescriptorSets()
+{
+	// create descriptor pool where sets are allocated from, it requires a size of it before using it.
+	{
+		std::vector<VkDescriptorPoolSize> pool_sizes( 1 );
+		pool_sizes[ 0 ].descriptorCount	= 1;
+		pool_sizes[ 0 ].type			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+		VkDescriptorPoolCreateInfo pool_create_info {};
+		pool_create_info.sType			= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_create_info.flags			= 0;
+		pool_create_info.maxSets		= 1;
+		pool_create_info.poolSizeCount	= pool_sizes.size();
+		pool_create_info.pPoolSizes		= pool_sizes.data();
+		vkCreateDescriptorPool( _device, &pool_create_info, nullptr, &_descriptor_pool );
+	}
+
+	// Create descriptor set layout, this defines the contents of the descriptor sets, we only create one set
+	{
+		std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layout_bindings( 1 );
+		descriptor_set_layout_bindings[ 0 ].binding					= 0;
+		descriptor_set_layout_bindings[ 0 ].descriptorType			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_set_layout_bindings[ 0 ].descriptorCount			= 1;
+		descriptor_set_layout_bindings[ 0 ].stageFlags				= VK_SHADER_STAGE_VERTEX_BIT;
+		descriptor_set_layout_bindings[ 0 ].pImmutableSamplers		= nullptr;
+
+		VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info {};
+		descriptor_set_layout_create_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptor_set_layout_create_info.bindingCount		= descriptor_set_layout_bindings.size();
+		descriptor_set_layout_create_info.pBindings			= descriptor_set_layout_bindings.data();
+		vkCreateDescriptorSetLayout( _device, &descriptor_set_layout_create_info, nullptr, &_descriptor_set_layout );
+	}
+
+	// allocate descriptor sets
+	{
+		VkDescriptorSetAllocateInfo allocate_info {};
+		allocate_info.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocate_info.descriptorPool		= _descriptor_pool;
+		allocate_info.descriptorSetCount	= 1;
+		allocate_info.pSetLayouts			= &_descriptor_set_layout;
+		vkAllocateDescriptorSets( _device, &allocate_info, &_descriptor_set );
+	}
+}
+
+void Window::_UpdateDescriptorSets()
+{
+	//	vkUpdateDescriptorSets();
+}
+
+void Window::_DestroyDescriptorSets()
+{
+	vkDestroyDescriptorPool( _device, _descriptor_pool, nullptr );
+	vkDestroyDescriptorSetLayout( _device, _descriptor_set_layout, nullptr );
 }

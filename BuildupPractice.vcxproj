@@ -166,6 +166,7 @@
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="Shared.hpp" />
     <ClInclude Include="SO_DynamicMesh.h" />
+    <ClInclude Include="UniformBuffers.h" />
     <ClInclude Include="VulkanCollections.h" />
     <ClInclude Include="VulkanTools.h" />
     <ClInclude Include="Window.h" />
