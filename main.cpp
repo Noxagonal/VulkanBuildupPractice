@@ -27,6 +27,7 @@ int main()
 	Window		*	window		= renderer.OpenWindow( { 800, 600 }, "test" );
 	Scene		*	scene		= renderer.CreateScene();
 
+	// mesh triangle. This is data only.
 	Mesh triangle;
 	triangle.CreateShape_Triangle();
 

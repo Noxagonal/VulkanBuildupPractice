@@ -1,6 +1,7 @@
 
 #include "BUILD_OPTIONS.h"
 #include "Platform.h"
+#include "VulkanTools.h"
 
 #include "SO_DynamicMesh.h"
 #include "Shared.hpp"
@@ -23,18 +24,17 @@ SO_DynamicMesh::SO_DynamicMesh( Scene * parent_scene, Renderer * renderer, Mesh 
 
 SO_DynamicMesh::~SO_DynamicMesh()
 {
-	vkFreeMemory( _device, _vertex_buffer_memory, nullptr );
-	vkFreeMemory( _device, _index_buffer_memory, nullptr );
-	vkDestroyBuffer( _device, _vertex_buffer, nullptr );
-	vkDestroyBuffer( _device, _index_buffer, nullptr );
+	FreeBuffersMemory( _renderer, _buffers );
+	vkDestroyBuffer( _device, _buffers[ 0 ].buffer, nullptr );
+	vkDestroyBuffer( _device, _buffers[ 1 ].buffer, nullptr );
 }
 
 void SO_DynamicMesh::Update()
 {
 	void *data = nullptr;
-	vkMapMemory( _device, _vertex_buffer_memory, 0, _vertex_buffer_size, 0, &data );
-	memcpy( data, _local_vertices.data(), _vertex_buffer_size );
-	vkUnmapMemory( _device, _vertex_buffer_memory );
+	vkMapMemory( _device, _buffers[ 0 ].memory, 0, _buffers[ 0 ].memory_size, 0, &data );
+	memcpy( data, _local_vertices.data(), _buffers[ 0 ].memory_size );
+	vkUnmapMemory( _device, _buffers[ 0 ].memory );
 }
 
 const std::vector<Mesh_Vertex> & SO_DynamicMesh::GetVertices() const
@@ -61,91 +61,46 @@ std::vector<Mesh_Polygon>& SO_DynamicMesh::GetEditableIndices()
 void SO_DynamicMesh::_Initialize()
 {
 	// copy date over to object local space
-	_local_vertices			= *_mesh->GetVerticesList();
-	_local_indices			= *_mesh->GetIndicesList();
+	_local_vertices					= *_mesh->GetVerticesList();
+	_local_indices					= *_mesh->GetIndicesList();
 
-	_vertex_buffer_size		= _mesh->GetVerticesListByteSize();
-	_index_buffer_size		= _mesh->GetIndicesListByteSize();
+	_buffers.resize( 2 );
+	_buffers[ 0 ].memory_size		= _mesh->GetVerticesListByteSize();
+	_buffers[ 1 ].memory_size		= _mesh->GetIndicesListByteSize();
+	_buffers[ 0 ].memory_properties	= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	_buffers[ 1 ].memory_properties	= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
 	// create buffers
 	VkBufferCreateInfo vertex_buffer_create_info {};
 	vertex_buffer_create_info.sType						= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	vertex_buffer_create_info.size						= _vertex_buffer_size;
+	vertex_buffer_create_info.size						= _buffers[ 0 ].memory_size;
 	vertex_buffer_create_info.usage						= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	vertex_buffer_create_info.sharingMode				= VK_SHARING_MODE_EXCLUSIVE;
-	ErrCheck( vkCreateBuffer( _device, &vertex_buffer_create_info, nullptr, &_vertex_buffer ) );
+	ErrCheck( vkCreateBuffer( _device, &vertex_buffer_create_info, nullptr, &_buffers[ 0 ].buffer ) );
 
 	VkBufferCreateInfo index_buffer_create_info {};
 	index_buffer_create_info.sType						= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	index_buffer_create_info.size						= _index_buffer_size;
+	index_buffer_create_info.size						= _buffers[ 1 ].memory_size;
 	index_buffer_create_info.usage						= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 	index_buffer_create_info.sharingMode				= VK_SHARING_MODE_EXCLUSIVE;
-	ErrCheck( vkCreateBuffer( _device, &index_buffer_create_info, nullptr, &_index_buffer ) );
+	ErrCheck( vkCreateBuffer( _device, &index_buffer_create_info, nullptr, &_buffers[ 1 ].buffer ) );
 
-	VkMemoryRequirements vertex_buffer_requirements;
-	VkMemoryRequirements index_buffer_requirements;
-	vkGetBufferMemoryRequirements( _device, _vertex_buffer, &vertex_buffer_requirements );
-	vkGetBufferMemoryRequirements( _device, _index_buffer, &index_buffer_requirements );
-	uint32_t vertex_memory_id		= UINT32_MAX;
-	uint32_t index_memory_id		= UINT32_MAX;
+	AllocateBuffersMemory( _renderer, _buffers );
 
-	auto gpu_memory_properties = _renderer->GetVulkanPhysicalDeviceMemoryProperties();
-	{
-		VkMemoryPropertyFlags requirements_mask = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		auto memory_type_bits = vertex_buffer_requirements.memoryTypeBits;
-		for( uint32_t i = 0; i < gpu_memory_properties.memoryTypeCount; i++ ) {
-			if( ( memory_type_bits & 1 ) == 1 ) {
-				// Type is available, does it match user properties?
-				if( ( gpu_memory_properties.memoryTypes[ i ].propertyFlags &
-					requirements_mask ) == requirements_mask ) {
-					vertex_memory_id = i;
-				}
-			}
-			memory_type_bits >>= 1;
-		}
-		assert( vertex_memory_id != UINT32_MAX );
-	}
-	{
-		VkMemoryPropertyFlags requirements_mask = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		auto memory_type_bits = index_buffer_requirements.memoryTypeBits;
-		for( uint32_t i = 0; i < gpu_memory_properties.memoryTypeCount; i++ ) {
-			if( ( memory_type_bits & 1 ) == 1 ) {
-				// Type is available, does it match user properties?
-				if( ( gpu_memory_properties.memoryTypes[ i ].propertyFlags &
-					requirements_mask ) == requirements_mask ) {
-					index_memory_id = i;
-				}
-			}
-			memory_type_bits >>= 1;
-		}
-		assert( index_memory_id != UINT32_MAX );
-	}
-
-	VkMemoryAllocateInfo vertex_memory_allocate_info {};
-	vertex_memory_allocate_info.sType				= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	vertex_memory_allocate_info.allocationSize		= vertex_buffer_requirements.size;
-	vertex_memory_allocate_info.memoryTypeIndex		= vertex_memory_id;
-	ErrCheck( vkAllocateMemory( _device, &vertex_memory_allocate_info, nullptr, &_vertex_buffer_memory ) );
-
-	VkMemoryAllocateInfo index_memory_allocate_info {};
-	index_memory_allocate_info.sType				= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	index_memory_allocate_info.allocationSize		= index_buffer_requirements.size;
-	index_memory_allocate_info.memoryTypeIndex		= index_memory_id;
-	ErrCheck( vkAllocateMemory( _device, &index_memory_allocate_info, nullptr, &_index_buffer_memory ) );
 	{
 		void *data = nullptr;
-		ErrCheck( vkMapMemory( _device, _vertex_buffer_memory, 0, vertex_buffer_requirements.size, 0, &data ) );
+		ErrCheck( vkMapMemory( _device, _buffers[ 0 ].memory, 0, _buffers[ 0 ].memory_size, 0, &data ) );
 		memcpy( data, _local_vertices.data(), _local_vertices.size() * sizeof( Mesh_Vertex ) );
-		vkUnmapMemory( _device, _vertex_buffer_memory );
+		vkUnmapMemory( _device, _buffers[ 0 ].memory );
 	}
 	{
 		void *data = nullptr;
-		ErrCheck( vkMapMemory( _device, _index_buffer_memory, 0, index_buffer_requirements.size, 0, &data ) );
+		ErrCheck( vkMapMemory( _device, _buffers[ 1 ].memory, 0, _buffers[ 1 ].memory_size, 0, &data ) );
 		memcpy( data, _local_indices.data(), _local_indices.size() * sizeof( Mesh_Polygon ) );
-		vkUnmapMemory( _device, _index_buffer_memory );
+		vkUnmapMemory( _device, _buffers[ 1 ].memory );
 	}
-	ErrCheck( vkBindBufferMemory( _device, _vertex_buffer, _vertex_buffer_memory, 0 ) );
-	ErrCheck( vkBindBufferMemory( _device, _index_buffer, _index_buffer_memory, 0 ) );
+	ErrCheck( vkBindBufferMemory( _device, _buffers[ 0 ].buffer, _buffers[ 0 ].memory, 0 ) );
+	ErrCheck( vkBindBufferMemory( _device, _buffers[ 1 ].buffer, _buffers[ 1 ].memory, 0 ) );
 }
 
 
@@ -184,16 +139,18 @@ void SO_DynamicMesh::_RebuildCommandBuffer()
 		begin_info.flags						= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		begin_info.pInheritanceInfo				= &inheritance_info;
 		vkBeginCommandBuffer( _command_buffers[ i ] , &begin_info );
-
+		/*
+		// I'm not sure if these barriers are actually needed
+		// Barrier for vertex buffer transfer
 		VkBufferMemoryBarrier vertex_buffer_barrier {};
 		vertex_buffer_barrier.sType					= VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		vertex_buffer_barrier.srcAccessMask			= VK_ACCESS_HOST_WRITE_BIT;
 		vertex_buffer_barrier.dstAccessMask			= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
 		vertex_buffer_barrier.srcQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
 		vertex_buffer_barrier.dstQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
-		vertex_buffer_barrier.buffer				= _vertex_buffer;
+		vertex_buffer_barrier.buffer				= _buffers[ 0 ].buffer;
 		vertex_buffer_barrier.offset				= 0;
-		vertex_buffer_barrier.size					= _vertex_buffer_size;
+		vertex_buffer_barrier.size					= _buffers[ 0 ].memory_size;
 
 		vkCmdPipelineBarrier( _command_buffers[ i ],
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -203,15 +160,16 @@ void SO_DynamicMesh::_RebuildCommandBuffer()
 			1, &vertex_buffer_barrier,
 			0, nullptr );
 
+		// Barrier for index buffer transfer
 		VkBufferMemoryBarrier index_buffer_barrier {};
 		index_buffer_barrier.sType					= VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		index_buffer_barrier.srcAccessMask			= VK_ACCESS_HOST_WRITE_BIT;
 		index_buffer_barrier.dstAccessMask			= VK_ACCESS_INDEX_READ_BIT;
 		index_buffer_barrier.srcQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
 		index_buffer_barrier.dstQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
-		index_buffer_barrier.buffer					= _index_buffer;
+		index_buffer_barrier.buffer					= _buffers[ 1 ].buffer;
 		index_buffer_barrier.offset					= 0;
-		index_buffer_barrier.size					= _index_buffer_size;
+		index_buffer_barrier.size					= _buffers[ 1 ].memory_size;
 
 		vkCmdPipelineBarrier( _command_buffers[ i ],
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -220,12 +178,12 @@ void SO_DynamicMesh::_RebuildCommandBuffer()
 			0, nullptr,
 			1, &index_buffer_barrier,
 			0, nullptr );
-
+			*/
 		vkCmdBindPipeline( _command_buffers[ i ], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline->GetVulkanPipeline() );
 
 		VkDeviceSize vertex_buffer_offsets[] { 0 };
-		vkCmdBindVertexBuffers( _command_buffers[ i ], 0, 1, &_vertex_buffer, vertex_buffer_offsets );
-		vkCmdBindIndexBuffer( _command_buffers[ i ], _index_buffer, 0, VK_INDEX_TYPE_UINT32 );
+		vkCmdBindVertexBuffers( _command_buffers[ i ], 0, 1, &_buffers[ 0 ].buffer, vertex_buffer_offsets );
+		vkCmdBindIndexBuffer( _command_buffers[ i ], _buffers[ 1 ].buffer, 0, VK_INDEX_TYPE_UINT32 );
 
 //		vkCmdDraw( _command_buffer, 3, 1, 0, 0 );
 		vkCmdDrawIndexed( _command_buffers[ i ], 3 * _local_indices.size(), 1, 0, 0, 0 );

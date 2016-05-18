@@ -279,3 +279,4 @@ ModelManifest.xml
 *.exe
 
 *.log
+/BuildupPractice.VC.db

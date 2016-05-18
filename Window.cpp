@@ -93,27 +93,28 @@ void Window::Render( const std::vector<VkCommandBuffer> & command_buffers )
 	command_buffer_begin_info.flags				= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	ErrCheck( vkBeginCommandBuffer( _render_command_buffers[ _current_swapchain_image ], &command_buffer_begin_info ) );
+
 	{
 		// memory barrier to transfer image from presentable to writeable
 		VkImageMemoryBarrier image_barrier {};
-		image_barrier.sType							= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		image_barrier.image							= _swapchain_images[ _current_swapchain_image ];
-		image_barrier.oldLayout						= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		image_barrier.newLayout						= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		image_barrier.srcAccessMask					= VK_ACCESS_MEMORY_READ_BIT;
-		image_barrier.dstAccessMask					= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-		image_barrier.srcQueueFamilyIndex			= VK_QUEUE_FAMILY_IGNORED;
-		image_barrier.dstQueueFamilyIndex			= VK_QUEUE_FAMILY_IGNORED;
-		image_barrier.subresourceRange.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
-		image_barrier.subresourceRange.layerCount			= 1;
-		image_barrier.subresourceRange.levelCount			= 1;
-		image_barrier.subresourceRange.baseArrayLayer		= 0;
-		image_barrier.subresourceRange.baseMipLevel			= 0;
+		image_barrier.sType						= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		image_barrier.image						= _swapchain_images[ _current_swapchain_image ];
+		image_barrier.oldLayout					= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		image_barrier.newLayout					= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		image_barrier.srcAccessMask				= VK_ACCESS_MEMORY_READ_BIT;
+		image_barrier.dstAccessMask				= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+		image_barrier.srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED;
+		image_barrier.dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED;
+		image_barrier.subresourceRange.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
+		image_barrier.subresourceRange.layerCount		= 1;
+		image_barrier.subresourceRange.levelCount		= 1;
+		image_barrier.subresourceRange.baseArrayLayer	= 0;
+		image_barrier.subresourceRange.baseMipLevel		= 0;
 
 		vkCmdPipelineBarrier(
 			_render_command_buffers[ _current_swapchain_image ],
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			0,
 			0, nullptr,
 			0, nullptr,
@@ -142,6 +143,7 @@ void Window::Render( const std::vector<VkCommandBuffer> & command_buffers )
 	begin_info.pClearValues		= clear_values;
 	vkCmdBeginRenderPass( _render_command_buffers[ _current_swapchain_image ], &begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS );
 	// objects render here
+
 	vkCmdExecuteCommands( _render_command_buffers[ _current_swapchain_image ], command_buffers.size(), command_buffers.data() );
 	vkCmdEndRenderPass( _render_command_buffers[ _current_swapchain_image ] );
 
@@ -319,214 +321,9 @@ void Window::_ExecuteSetupCommandBuffer()
 }
 
 
-#if VK_USE_PLATFORM_WIN32_KHR
-
-// MS-Windows event handling function:
-LRESULT CALLBACK WindowsEventHandler( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
-{
-	Window * window = reinterpret_cast<Window*>(
-		GetWindowLongPtrW( hWnd, GWLP_USERDATA ) );
-
-	switch( uMsg ) {
-	case WM_CLOSE:
-		window->Close();
-		break;
-	case WM_SIZE:
-		// we get here if the window has changed size, we should rebuild most
-		// of our window resources before rendering to this window again.
-		// ( no need for this because our window sizing by hand is disabled )
-		break;
-	default:
-		return ( DefWindowProc( hWnd, uMsg, wParam, lParam ) );
-	}
-	return 0;
-}
-
-uint64_t Window::_win32_class_id_counter = 0;
-
-void Window::_CreateOSWindow()
-{
-	WNDCLASSEX win_class {};
-	assert( _surface_size.width > 0 );
-	assert( _surface_size.height > 0 );
-
-	_win32_instance				= GetModuleHandle( nullptr );
-	_win32_class_name			= _window_name + "_" + std::to_string( _win32_class_id_counter );
-	++_win32_class_id_counter;
-
-	// Initialize the window class structure:
-	win_class.cbSize			= sizeof( WNDCLASSEX );
-	win_class.style				= CS_HREDRAW | CS_VREDRAW;
-	win_class.lpfnWndProc		= WindowsEventHandler;
-	win_class.cbClsExtra		= 0;
-	win_class.cbWndExtra		= 0;
-	win_class.hInstance			= _win32_instance; // hInstance
-	win_class.hIcon				= LoadIcon( NULL, IDI_APPLICATION );
-	win_class.hCursor			= LoadCursor( NULL, IDC_ARROW );
-	win_class.hbrBackground		= (HBRUSH)GetStockObject( WHITE_BRUSH );
-	win_class.lpszMenuName		= NULL;
-	win_class.lpszClassName		= _win32_class_name.c_str();
-	win_class.hIconSm			= LoadIcon( NULL, IDI_WINLOGO );
-	// Register window class:
-	if( !RegisterClassEx( &win_class ) ) {
-		// It didn't work, so try to give a useful error:
-		assert( 0 && "Cannot create a window in which to draw!\n" );
-		fflush( stdout );
-		exit( -1 );
-	}
-
-	DWORD ex_style	= WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
-	DWORD style		= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX; // | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-
-	// Create window with the registered class:
-	RECT wr = { 0, 0, LONG( _surface_size.width ), LONG( _surface_size.height ) };
-	AdjustWindowRectEx( &wr, style, FALSE, ex_style );
-	_win32_window = CreateWindowEx( 0,
-		_win32_class_name.c_str(),		// class name
-		_window_name.c_str(),			// app name
-		style,							// window style
-		CW_USEDEFAULT, CW_USEDEFAULT,	// x/y coords
-		wr.right - wr.left,				// width
-		wr.bottom - wr.top,				// height
-		NULL,							// handle to parent
-		NULL,							// handle to menu
-		_win32_instance,				// hInstance
-		NULL );							// no extra parameters
-	if( !_win32_window ) {
-		// It didn't work, so try to give a useful error:
-		assert( 1 && "Cannot create a window in which to draw!\n" );
-		fflush( stdout );
-		exit( -1 );
-	}
-	SetWindowLongPtr( _win32_window, GWLP_USERDATA, (LONG_PTR)this );
-
-	ShowWindow( _win32_window, SW_SHOW );
-	SetForegroundWindow( _win32_window );
-	SetFocus( _win32_window );
-}
-
-void Window::_DestroyOSWindow()
-{
-	DestroyWindow( _win32_window );
-	UnregisterClass( _win32_class_name.c_str(), _win32_instance );
-	_win32_window		= nullptr;
-}
-
-void Window::_UpdateOSWindow()
-{
-	MSG msg;
-	if( PeekMessage( &msg, _win32_window, 0, 0, PM_REMOVE ) ) {
-		TranslateMessage( &msg );
-		DispatchMessage( &msg );
-	}
-}
-
-
-#elif VK_USE_PLATFORM_XCB_KHR
-
-
-void Window::_CreateOSWindow()
-{
-	// create connection to X11 server
-	const xcb_setup_t		*	setup		= nullptr;
-	xcb_screen_iterator_t		iter;
-	int							screen		= 0;
-
-	_xcb_connection			=	xcb_connect( nullptr, &screen );
-	if( _xcb_connection == nullptr ) {
-		std::cout << "Cannot find a compatible Vulkan ICD.\n";
-		exit( -1 );
-	}
-
-	setup		= xcb_get_setup( _xcb_connection );
-	iter		= xcb_setup_roots_iterator( setup );
-	while( screen-- > 0 ) {
-		xcb_screen_next( &iter );
-	}
-	_xcb_screen = iter.data;
-
-    VkRect2D dimensions = {{0, 0}, {800, 600}};
-
-	// create window
-    assert( dimensions.extent.width > 0 );
-    assert( dimensions.extent.height > 0 );
-
-	uint32_t value_mask, value_list[ 32 ];
-
-	_xcb_window = xcb_generate_id( _xcb_connection );
-
-	value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-	value_list[ 0 ] = _xcb_screen->black_pixel;
-	value_list[ 1 ] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE;
-
-	xcb_create_window( _xcb_connection, XCB_COPY_FROM_PARENT, _xcb_window,
-        _xcb_screen->root, dimensions.offset.x, dimensions.offset.y,
-        dimensions.extent.width, dimensions.extent.height, 0,
-		XCB_WINDOW_CLASS_INPUT_OUTPUT, _xcb_screen->root_visual,
-		value_mask, value_list );
-
-	/* Magic code that will send notification when window is destroyed */
-	// might cause problems because I put the connection in the renderer... Lets hope this works
-	xcb_intern_atom_cookie_t cookie =
-		xcb_intern_atom( _xcb_connection, 1, 12, "WM_PROTOCOLS" );
-	xcb_intern_atom_reply_t *reply =
-		xcb_intern_atom_reply( _xcb_connection, cookie, 0 );
-
-	xcb_intern_atom_cookie_t cookie2 =
-		xcb_intern_atom( _xcb_connection, 0, 16, "WM_DELETE_WINDOW" );
-	_xcb_atom_window_reply =
-		xcb_intern_atom_reply( _xcb_connection, cookie2, 0 );
-
-	xcb_change_property( _xcb_connection, XCB_PROP_MODE_REPLACE, _xcb_window,
-		( *reply ).atom, 4, 32, 1,
-		&( *_xcb_atom_window_reply ).atom );
-	free( reply );
-
-	xcb_map_window( _xcb_connection, _xcb_window );
-
-	// Force the x/y coordinates to 100,100 results are identical in consecutive
-	// runs
-	const uint32_t coords[] = { 100, 100 };
-	xcb_configure_window( _xcb_connection, _xcb_window,
-		XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, coords );
-	xcb_flush( _xcb_connection );
-
-	xcb_generic_event_t *e;
-	while( ( e = xcb_wait_for_event( _xcb_connection ) ) ) {
-		if( ( e->response_type & ~0x80 ) == XCB_EXPOSE )
-			break;
-	}
-}
-
-void Window::_DestroyOSWindow()
-{
-	xcb_destroy_window( _xcb_connection, _xcb_window );
-	xcb_disconnect( _xcb_connection );
-    _xcb_window			= 0;
-	_xcb_connection		= nullptr;
-}
-
-void Window::_UpdateOSWindow()
-{
-}
-
-#endif
-
 void Window::_CreateSurface()
 {
-#if VK_USE_PLATFORM_WIN32_KHR
-	VkWin32SurfaceCreateInfoKHR create_info {};
-	create_info.sType			= VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	create_info.hinstance		= _win32_instance;
-	create_info.hwnd			= _win32_window;
-	ErrCheck( vkCreateWin32SurfaceKHR( _renderer->_instance, &create_info, nullptr, &_surface ) );
-#elif VK_USE_PLATFORM_XCB_KHR
-	VkXcbSurfaceCreateInfoKHR create_info {};
-	create_info.sType			= VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-	create_info.connection		= _xcb_connection;
-	create_info.window			= _xcb_window;
-	ErrCheck( vkCreateXcbSurfaceKHR( _renderer->_instance, &create_info, nullptr, &_surface ) );
-#endif
+	_CreateOSSurface();
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR( _renderer->_gpu, _surface, &_surface_capabilities );
 	{
@@ -557,7 +354,7 @@ void Window::_DestroySurface()
 void Window::_CreateSwapchain()
 {
 	// select swapchain image amount
-	_swapchain_image_count			= std::min( std::max( _swapchain_image_count, _surface_capabilities.minImageCount ), _surface_capabilities.maxImageCount );
+	_swapchain_image_count			= std::min( std::max( _swapchain_image_count, _surface_capabilities.minImageCount + 1 ), _surface_capabilities.maxImageCount );
 
 	// make sure that the swapchain images and the surface area match in size
 	// checking only width is enough
@@ -594,7 +391,7 @@ void Window::_CreateSwapchain()
 	create_info.presentMode				= present_mode;
 	create_info.clipped					= true;
 	create_info.imageColorSpace			= _surface_format.colorSpace;
-	create_info.imageUsage				= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	create_info.imageUsage				= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;// | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	create_info.imageSharingMode		= VK_SHARING_MODE_EXCLUSIVE;
 	create_info.queueFamilyIndexCount	= 0;
 	create_info.pQueueFamilyIndices		= nullptr;
@@ -647,7 +444,13 @@ void Window::_CreateSwapchainImages()
 		image_mem_barrier.dstAccessMask			= VK_ACCESS_MEMORY_READ_BIT;
 		image_mem_barrier.subresourceRange		= view_create_info.subresourceRange;
 
-		vkCmdPipelineBarrier( _setup_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_mem_barrier );
+		vkCmdPipelineBarrier( _setup_command_buffer,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &image_mem_barrier );
 	}
 }
 
@@ -736,7 +539,13 @@ void Window::_CreateDepthBuffer()
 	image_memory_barrier.subresourceRange.baseArrayLayer	= 0;
 	image_memory_barrier.subresourceRange.baseMipLevel		= 0;
 
-	vkCmdPipelineBarrier( _setup_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier );
+	vkCmdPipelineBarrier( _setup_command_buffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &image_memory_barrier );
 
 	VkImageViewCreateInfo image_view_create_info {};
 	image_view_create_info.sType			= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -923,3 +732,57 @@ void Window::_DestroyPipelines()
 	_pipelines.clear();
 }
 
+void Window::_CreateDescriptorSets()
+{
+	// create descriptor pool where sets are allocated from, it requires a size of it before using it.
+	{
+		std::vector<VkDescriptorPoolSize> pool_sizes( 1 );
+		pool_sizes[ 0 ].descriptorCount	= 1;
+		pool_sizes[ 0 ].type			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+		VkDescriptorPoolCreateInfo pool_create_info {};
+		pool_create_info.sType			= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_create_info.flags			= 0;
+		pool_create_info.maxSets		= 1;
+		pool_create_info.poolSizeCount	= pool_sizes.size();
+		pool_create_info.pPoolSizes		= pool_sizes.data();
+		vkCreateDescriptorPool( _device, &pool_create_info, nullptr, &_descriptor_pool );
+	}
+
+	// Create descriptor set layout, this defines the contents of the descriptor sets, we only create one set
+	{
+		std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layout_bindings( 1 );
+		descriptor_set_layout_bindings[ 0 ].binding					= 0;
+		descriptor_set_layout_bindings[ 0 ].descriptorType			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_set_layout_bindings[ 0 ].descriptorCount			= 1;
+		descriptor_set_layout_bindings[ 0 ].stageFlags				= VK_SHADER_STAGE_VERTEX_BIT;
+		descriptor_set_layout_bindings[ 0 ].pImmutableSamplers		= nullptr;
+
+		VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info {};
+		descriptor_set_layout_create_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptor_set_layout_create_info.bindingCount		= descriptor_set_layout_bindings.size();
+		descriptor_set_layout_create_info.pBindings			= descriptor_set_layout_bindings.data();
+		vkCreateDescriptorSetLayout( _device, &descriptor_set_layout_create_info, nullptr, &_descriptor_set_layout );
+	}
+
+	// allocate descriptor sets
+	{
+		VkDescriptorSetAllocateInfo allocate_info {};
+		allocate_info.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocate_info.descriptorPool		= _descriptor_pool;
+		allocate_info.descriptorSetCount	= 1;
+		allocate_info.pSetLayouts			= &_descriptor_set_layout;
+		vkAllocateDescriptorSets( _device, &allocate_info, &_descriptor_set );
+	}
+}
+
+void Window::_UpdateDescriptorSets()
+{
+	//	vkUpdateDescriptorSets();
+}
+
+void Window::_DestroyDescriptorSets()
+{
+	vkDestroyDescriptorPool( _device, _descriptor_pool, nullptr );
+	vkDestroyDescriptorSetLayout( _device, _descriptor_set_layout, nullptr );
+}

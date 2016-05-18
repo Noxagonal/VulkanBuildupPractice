@@ -207,22 +207,6 @@ void Pipeline::_SubConstructor()
 	dynamic_state_create_info.dynamicStateCount			= dynamic_states.size();
 	dynamic_state_create_info.pDynamicStates			= dynamic_states.data();
 
-	/* TODO... Elsewhere
-	std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layout_bindings( 1 );
-	descriptor_set_layout_bindings[ 0 ].binding					=;
-	descriptor_set_layout_bindings[ 0 ].descriptorType			=;
-	descriptor_set_layout_bindings[ 0 ].descriptorCount			=;
-	descriptor_set_layout_bindings[ 0 ].stageFlags				=;
-	descriptor_set_layout_bindings[ 0 ].pImmutableSamplers		=;
-
-	VkDescriptorSetLayout descriptor_set_layout;
-	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info {};
-	descriptor_set_layout_create_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptor_set_layout_create_info.bindingCount		=;
-	descriptor_set_layout_create_info.pBindings			=;
-	vkCreateDescriptorSetLayout( _device, &descriptor_set_layout_create_info, nullptr, &descriptor_set_layout );
-	*/
-
 	std::vector<VkPushConstantRange> range( 1 );
 	range[ 0 ].stageFlags		= VK_SHADER_STAGE_FRAGMENT_BIT;
 	range[ 0 ].offset			= 0;
