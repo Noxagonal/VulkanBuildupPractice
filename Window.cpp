@@ -84,6 +84,11 @@ void Window::Close()
 	_window_should_close = true;
 }
 
+void Window::SetCaption( std::string caption )
+{
+	SetWindowText( _win32_window, caption.c_str() );
+}
+
 void Window::Render( const std::vector<VkCommandBuffer> & command_buffers )
 {
 	// Trying 2 pipeline barriers inside one command buffer
@@ -143,7 +148,7 @@ void Window::Render( const std::vector<VkCommandBuffer> & command_buffers )
 	begin_info.pClearValues		= clear_values;
 	vkCmdBeginRenderPass( _render_command_buffers[ _current_swapchain_image ], &begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS );
 	// objects render here
-
+//	vkCmdBindPipeline( _render_command_buffers[ _current_swapchain_image ], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines[ 0 ]->GetVulkanPipeline() );
 	vkCmdExecuteCommands( _render_command_buffers[ _current_swapchain_image ], command_buffers.size(), command_buffers.data() );
 	vkCmdEndRenderPass( _render_command_buffers[ _current_swapchain_image ] );
 
@@ -467,7 +472,7 @@ void Window::_CreateDepthBuffer()
 	for( auto f : try_depth_formats ) {
 		VkFormatProperties format_properties {};
 		vkGetPhysicalDeviceFormatProperties( _renderer->_gpu, f, &format_properties );
-		// notice "optimalTilingFeatures". We require depth stencil attachments on optimal tiling
+		// notice "optimalTilingFeatures". We require depth and stencil attachments on optimal tiling
 		if( format_properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT ) {
 			_depth_format			= f;
 			break;
@@ -497,7 +502,7 @@ void Window::_CreateDepthBuffer()
 	image_create_info.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	image_create_info.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 	image_create_info.sharingMode			= VK_SHARING_MODE_EXCLUSIVE;
-	image_create_info.usage					= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	image_create_info.usage					= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;// | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
 	ErrCheck( vkCreateImage( _device, &image_create_info, nullptr, &_depth_image ) );
 
@@ -526,6 +531,23 @@ void Window::_CreateDepthBuffer()
 	ErrCheck( vkAllocateMemory( _device, &allocate_info, nullptr, &_depth_image_memory ) );
 	ErrCheck( vkBindImageMemory( _device, _depth_image, _depth_image_memory, 0 ) );
 
+	VkImageViewCreateInfo image_view_create_info {};
+	image_view_create_info.sType			= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	image_view_create_info.image			= _depth_image;
+	image_view_create_info.format			= _depth_format;
+	image_view_create_info.viewType			= VK_IMAGE_VIEW_TYPE_2D;
+	image_view_create_info.components.r		= VK_COMPONENT_SWIZZLE_R;
+	image_view_create_info.components.g		= VK_COMPONENT_SWIZZLE_G;
+	image_view_create_info.components.b		= VK_COMPONENT_SWIZZLE_B;
+	image_view_create_info.components.a		= VK_COMPONENT_SWIZZLE_A;
+	image_view_create_info.subresourceRange.aspectMask			= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	image_view_create_info.subresourceRange.layerCount			= 1;
+	image_view_create_info.subresourceRange.levelCount			= 1;
+	image_view_create_info.subresourceRange.baseArrayLayer		= 0;
+	image_view_create_info.subresourceRange.baseMipLevel		= 0;
+
+	ErrCheck( vkCreateImageView( _device, &image_view_create_info, nullptr, &_depth_image_view ) );
+
 	VkImageMemoryBarrier image_memory_barrier {};
 	image_memory_barrier.sType				= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	image_memory_barrier.image				= _depth_image;
@@ -546,30 +568,13 @@ void Window::_CreateDepthBuffer()
 		0, nullptr,
 		0, nullptr,
 		1, &image_memory_barrier );
-
-	VkImageViewCreateInfo image_view_create_info {};
-	image_view_create_info.sType			= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	image_view_create_info.image			= _depth_image;
-	image_view_create_info.format			= _depth_format;
-	image_view_create_info.viewType			= VK_IMAGE_VIEW_TYPE_2D;
-	image_view_create_info.components.r		= VK_COMPONENT_SWIZZLE_R;
-	image_view_create_info.components.g		= VK_COMPONENT_SWIZZLE_G;
-	image_view_create_info.components.b		= VK_COMPONENT_SWIZZLE_B;
-	image_view_create_info.components.a		= VK_COMPONENT_SWIZZLE_A;
-	image_view_create_info.subresourceRange.aspectMask			= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-	image_view_create_info.subresourceRange.layerCount			= 1;
-	image_view_create_info.subresourceRange.levelCount			= 1;
-	image_view_create_info.subresourceRange.baseArrayLayer		= 0;
-	image_view_create_info.subresourceRange.baseMipLevel		= 0;
-
-	ErrCheck( vkCreateImageView( _device, &image_view_create_info, nullptr, &_depth_image_view ) );
 }
 
 void Window::_DestroyDepthBuffer()
 {
 	vkDestroyImageView( _device, _depth_image_view, nullptr );
-	vkDestroyImage( _device, _depth_image, nullptr );
 	vkFreeMemory( _device, _depth_image_memory, nullptr );
+	vkDestroyImage( _device, _depth_image, nullptr );
 }
 
 void Window::_CreateRenderPass()

@@ -23,6 +23,8 @@ public:
 	void									Update();
 	void									Close();
 
+	void									SetCaption( std::string caption );
+
 	void									Render( const std::vector<VkCommandBuffer> & command_buffers );
 	void									RenderScene( const Scene * scene, bool force_recalculate = false );
 

@@ -2,6 +2,7 @@
 #include "BUILD_OPTIONS.h"
 #include "Platform.h"
 
+#include <time.h>
 #include "Shared.hpp"
 #include "Renderer.h"
 #include "Window.h"
@@ -41,6 +42,8 @@ int main()
 	}
 
 	float rotator = 0.0f;		// simple ever increasing float
+	uint32_t fps_counter		= 0;
+	time_t fps_timer			= clock();
 
 	while( renderer.Run() ) {
 		rotator += 0.0015f;		// increasing the "float counter". This just moves the vertices around a little
@@ -52,6 +55,13 @@ int main()
 		}
 		scene->Update();					// update scene, this handles all general stuff, including vertex uploads to GPU, this is recursive
 		window->RenderScene( scene );		// render scene, this is also recursive
+		fps_counter++;
+		auto fps_temp_time = clock();
+		if( fps_timer < fps_temp_time ) {
+			fps_timer = fps_temp_time + 1000;
+			window->SetCaption( std::to_string( fps_counter ) );
+			fps_counter = 0;
+		}
 	}
 	vkQueueWaitIdle( renderer.GetVulkanQueue() );
 
